@@ -1,0 +1,172 @@
+# Dockerized Lambda Deployment mit Function URLs in JavaScript
+
+Dieses Projekt zeigt dir, wie du eine Lambda-Funktion in einem Docker-Container erstellst, sie mit externen Bibliotheken erweiterst, Umgebungsvariablen nutzt und Fehlerbehandlung sowie Logging implementierst.
+
+## Inhaltsverzeichnis
+
+1. [Einführung](#einführung)
+2. [Voraussetzungen](#voraussetzungen)
+3. [Schritt 1: Docker-Image für Node.js Lambda](#schritt-1-docker-image-für-nodejs-lambda)
+4. [Schritt 2: Lambda mit benutzerdefinierter Abhängigkeit](#schritt-2-lambda-mit-benutzerdefinierter-abhängigkeit)
+5. [Schritt 3: Umgebungsvariablen verwenden](#schritt-3-umgebungsvariablen-verwenden)
+6. [Schritt 4: Lambda mit Function URL und Eingabeparametern](#schritt-4-lambda-mit-function-url-und-eingabeparametern)
+7. [Schritt 5: Fehlerbehandlung und Logging](#schritt-5-fehlerbehandlung-und-logging)
+8. [Testen und Bereitstellen](#testen-und-bereitstellen)
+9. [Fazit](#fazit)
+
+## Einführung
+
+In diesem Projekt erstellst du eine Lambda-Funktion, die in einem Docker-Container läuft und über eine Function URL in AWS erreichbar ist. Du wirst auch lernen, wie du Umgebungsvariablen und Fehlerbehandlung hinzufügst.
+
+## Voraussetzungen
+
+Stelle sicher, dass du folgende Tools installiert hast:
+
+- **Docker**: Zum Erstellen und Ausführen des Containers.
+- **AWS CLI**: Zum Verwalten von AWS-Diensten.
+- **Node.js**: Zum Schreiben der Lambda-Funktion.
+
+## Schritt 1: Docker-Image für Node.js Lambda
+
+Erstelle ein einfaches Docker-Image für eine Lambda-Funktion.
+
+1. Erstelle eine `index.js`-Datei mit dieser Funktion:
+    ```javascript
+    exports.handler = async (event) => {
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: "Hello from Lambda!" })
+        };
+    };
+    ```
+
+2. Erstelle das Dockerfile:
+    ```dockerfile
+    FROM public.ecr.aws/lambda/nodejs:22
+    COPY index.js package.json ./
+    RUN npm install
+    CMD ["index.handler"]
+    ```
+
+3. Baue das Docker-Image:
+    ```bash
+    docker build -t lambda-example .
+    ```
+
+4. Teste die Lambda-Funktion lokal:
+    ```bash
+    docker run -p 9000:8080 lambda-example
+    ```
+
+## Schritt 2: Lambda mit benutzerdefinierter Abhängigkeit
+
+Füge eine externe Bibliothek (z. B. axios) hinzu, um eine API-Anfrage zu senden.
+
+1. Installiere axios:
+    ```bash
+    npm install axios
+    ```
+
+2. Aktualisiere die `index.js`:
+    ```javascript
+    const axios = require('axios');
+    exports.handler = async (event) => {
+        const response = await axios.get('https://api.github.com');
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                message: "Erfolgreich von GitHub abgerufen!",
+                data: response.data
+            })
+        };
+    };
+    ```
+
+3. Baue das Docker-Image erneut.
+
+## Schritt 3: Umgebungsvariablen verwenden
+
+Nutze Umgebungsvariablen, sowohl lokal im Docker-Container als auch in AWS Lambda.
+
+1. Aktualisiere `index.js`:
+    ```javascript
+    exports.handler = async (event) => {
+        const myVar = process.env.MY_ENV_VAR || 'default-value';
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: `Der Wert der Umgebungsvariablen ist: ${myVar}` })
+        };
+    };
+    ```
+
+2. Setze Umgebungsvariablen lokal:
+    ```bash
+    docker run -e MY_ENV_VAR=MeinWert lambda-example
+    ```
+
+## Schritt 4: Lambda mit Function URL und Eingabeparametern
+
+Erstelle eine Lambda-Funktion, die HTTP-POST-Anfragen verarbeitet.
+
+1. Aktualisiere `index.js`:
+    ```javascript
+    exports.handler = async (event) => {
+        const body = JSON.parse(event.body);
+        const name = body.name || 'Unbekannt';
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: `Hallo, ${name}!` })
+        };
+    };
+    ```
+
+2. Teste mit cURL:
+    ```bash
+    curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -H "Content-Type: application/json" -d '{"name": "Ilona"}'
+    ```
+
+## Schritt 5: Fehlerbehandlung und Logging
+
+Füge Fehlerbehandlung und Logging hinzu.
+
+1. Aktualisiere `index.js`:
+    ```javascript
+    exports.handler = async (event) => {
+        try {
+            const body = JSON.parse(event.body);
+            const name = body.name || 'Unbekannt';
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ message: `Hallo, ${name}!` })
+            };
+        } catch (error) {
+            console.error('Fehler:', error);
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ message: "Es gab einen Fehler!" })
+            };
+        }
+    };
+    ```
+
+2. Überprüfe Fehler in AWS CloudWatch.
+
+## Testen und Bereitstellen
+
+1. Tagge das Docker-Image:
+    ```bash
+    docker tag lambda-example:latest <aws_account_id>.dkr.ecr.<region>.amazonaws.com/docker-lambda-example:latest
+    ```
+
+2. Push das Docker-Image in ECR:
+    ```bash
+    docker push <aws_account_id>.dkr.ecr.<region>.amazonaws.com/docker-lambda-example:latest
+    ```
+
+3. Erstelle die Lambda-Funktion in AWS und aktiviere die Function URL.
+
+## Fazit
+
+Du hast nun eine Dockerized Lambda-Funktion erstellt, die mit externen Bibliotheken arbeitet, Umgebungsvariablen nutzt, Fehlerbehandlung implementiert und über eine Lambda Function URL erreichbar ist.
+
+Viel Erfolg bei der Umsetzung! 😊
