@@ -1,0 +1,37 @@
+# Lambda S3 Integration
+
+Dieses Projekt zeigt, wie du eine AWS Lambda-Funktion erstellst, die mit einem S3-Bucket zusammenarbeitet. Die Funktion kann Dateien in den S3-Bucket hochladen und aus dem Bucket lesen.
+
+## Funktionen
+
+- **Upload**: Lädt eine Datei in den S3-Bucket hoch.
+- **Read**: Liest den Inhalt einer Datei aus dem S3-Bucket.
+
+## Voraussetzungen
+
+- AWS-Konto
+- S3-Bucket erstellen
+- AWS Lambda mit entsprechenden Berechtigungen (s3:PutObject, s3:GetObject)
+
+## Schritte zum Einrichten
+
+1. **Lambda-Funktion erstellen**:
+   - Gehe in der AWS-Konsole zu Lambda und erstelle eine neue Funktion.
+   - Füge den Code aus `lambda-function.js` in die Funktion ein.
+
+2. **Umgebungsvariable setzen**:
+   - Setze in den Umgebungsvariablen der Lambda-Funktion `BUCKET_NAME` auf den Namen deines S3-Buckets.
+
+3. **IAM-Rolle anpassen**:
+   - Erstelle eine IAM-Rolle mit den Berechtigungen `s3:PutObject` und `s3:GetObject` für deinen S3-Bucket.
+   - Verknüpfe diese Rolle mit deiner Lambda-Funktion.
+
+4. **Testen**:
+   - Verwende das folgende Test-Event, um eine Datei hochzuladen oder zu lesen:
+
+```json
+{
+  "action": "upload",
+  "fileName": "test.txt",
+  "fileContent": "Hallo, S3!"
+}
